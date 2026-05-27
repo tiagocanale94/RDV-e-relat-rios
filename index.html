@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<title>Equalizagro - Campo</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f3f4f6;color:#111827}
+input,textarea,select,button{font-family:inherit;font-size:14px}
+.inp{width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;outline:none;background:#fff;color:#111827}
+.inp:focus{border-color:#1a7a42}
+.lbl{display:block;font-size:12px;font-weight:500;color:#6b7280;margin-bottom:5px}
+.btn-green{width:100%;padding:13px;background:#1a7a42;color:#fff;border:none;border-radius:10px;font-weight:600;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-green:disabled{background:#9ca3af;cursor:not-allowed}
+.btn-outline{width:100%;padding:11px;background:#f0fdf4;color:#1a7a42;border:1px solid #1a7a42;border-radius:10px;font-weight:500;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.card{background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:14px;margin-bottom:12px}
+/* NAV PRINCIPAL */
+.main-nav{display:flex;background:#fff;border-bottom:2px solid #e5e7eb;position:sticky;top:0;z-index:20}
+.main-tab{flex:1;padding:13px 4px;border:none;background:none;cursor:pointer;font-size:11px;color:#6b7280;border-bottom:3px solid transparent;display:flex;flex-direction:column;align-items:center;gap:3px;font-weight:500}
+.main-tab.active{color:#1a7a42;border-bottom-color:#1a7a42;font-weight:700}
+/* SUB NAV */
+.sub-nav{display:flex;background:#f9fafb;border-bottom:1px solid #e5e7eb;position:sticky;top:49px;z-index:19}
+.sub-tab{flex:1;padding:10px 4px;border:none;background:none;cursor:pointer;font-size:12px;color:#6b7280;border-bottom:2px solid transparent;display:flex;align-items:center;justify-content:center;gap:4px}
+.sub-tab.active{color:#1a7a42;border-bottom-color:#1a7a42;font-weight:600}
+.header{background:#1a7a42;color:#fff;padding:13px 16px;display:flex;align-items:center;gap:10px}
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:999;white-space:nowrap;pointer-events:none;display:none;max-width:90vw;white-space:normal;text-align:center}
+.toast.ok{background:#dcfce7;color:#15803d;border:1px solid #86efac}
+.toast.err{background:#fee2e2;color:#dc2626;border:1px solid #fca5a5}
+.toast.warn{background:#fef9c3;color:#854d0e;border:1px solid #fde047}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.spin{animation:spin 1s linear infinite;display:inline-block}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.blink{animation:blink 1s infinite}
+.module{display:none}
+.module.active{display:block}
+.page{display:none;padding:16px;padding-bottom:40px}
+.page.active{display:block}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sec-lbl{font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px}
+/* CAMPO */
+.entry-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:12px;margin-bottom:8px}
+.day-header{background:#f9fafb;padding:8px 14px;display:flex;justify-content:space-between;border-bottom:1px solid #e5e7eb;border-radius:10px 10px 0 0}
+.total-bar{background:#1a7a42;color:#fff;border-radius:10px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+/* RDV */
+.cat-btn{padding:10px 8px;border:1px solid #d1d5db;border-radius:10px;background:#fff;cursor:pointer;text-align:center;font-size:12px;font-weight:500;color:#374151;display:flex;flex-direction:column;align-items:center;gap:4px}
+.cat-btn.selected{border-color:#1a7a42;background:#f0fdf4;color:#1a7a42}
+.cat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.cat-badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;background:#f0fdf4;color:#15803d;border:1px solid #86efac;margin-bottom:4px}
+.summary-row{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #f3f4f6;font-size:14px}
+.edit-banner{background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:9px 12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+</style>
+</head>
+<body>
+
+<div style="max-width:520px;margin:0 auto">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div style="width:36px;height:36px;background:rgba(255,255,255,.2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px">🌱</div>
+    <div style="flex:1">
+      <div style="font-weight:700;font-size:17px">Equalizagro</div>
+      <div style="font-size:12px;opacity:.8">Tiago Canale</div>
+    </div>
+    <button onclick="openApiModal()" id="api-btn" style="background:rgba(255,255,255,.2);border:none;border-radius:8px;padding:6px 12px;color:#fff;font-size:12px;cursor:pointer">⚙ API</button>
+  </div>
+
+  <!-- MODAL API -->
+  <div id="api-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center;padding:24px">
+    <div style="background:#fff;border-radius:16px;padding:24px;width:100%;max-width:380px">
+      <div style="font-weight:700;font-size:16px;margin-bottom:4px">🔑 Chave da API</div>
+      <p style="color:#6b7280;font-size:13px;margin-bottom:16px;line-height:1.6">Cole sua chave da API Anthropic. Ela fica salva apenas neste dispositivo.</p>
+      <label class="lbl">Chave API (sk-ant-...)</label>
+      <input id="api-key-input" class="inp" type="text" placeholder="sk-ant-api03-..." style="margin-bottom:8px"/>
+      <div style="font-size:11px;color:#9ca3af;margin-bottom:16px">Obtenha em <strong>console.anthropic.com</strong> → API Keys</div>
+      <button onclick="saveApiKey()" class="btn-green" style="margin-bottom:8px">Salvar</button>
+      <button onclick="closeApiModal()" style="width:100%;padding:11px;background:none;border:1px solid #d1d5db;border-radius:10px;color:#6b7280;cursor:pointer;font-size:14px">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- NAVEGAÇÃO PRINCIPAL -->
+  <div class="main-nav">
+    <button class="main-tab active" id="mtab-campo" onclick="switchModule('campo')">
+      📋<span>Relatórios Semanais</span>
+    </button>
+    <button class="main-tab" id="mtab-rdv" onclick="switchModule('rdv')">
+      🧾<span>RDV Despesas</span>
+    </button>
+  </div>
+
+  <!-- ==================== MÓDULO CAMPO ==================== -->
+  <div class="module active" id="mod-campo">
+    <div class="sub-nav">
+      <button class="sub-tab active" id="ctab-daily" onclick="switchCampoTab('daily')">📅 Diário</button>
+      <button class="sub-tab" id="ctab-week" onclick="switchCampoTab('week')">📊 Semana</button>
+      <button class="sub-tab" id="ctab-export" onclick="switchCampoTab('export')">💾 Exportar</button>
+    </div>
+
+    <!-- DIÁRIO -->
+    <div class="page active" id="cpage-daily">
+      <div id="c-edit-banner" class="edit-banner" style="display:none">
+        <span style="font-size:13px;color:#854d0e;font-weight:500">✏️ Editando registro</span>
+        <button onclick="cCancelEdit()" style="background:none;border:none;color:#854d0e;cursor:pointer;font-size:13px">Cancelar</button>
+      </div>
+
+      <div style="margin-bottom:12px">
+        <label class="lbl">Data</label>
+        <input class="inp" type="date" id="c-date" onchange="renderTodayEntries()"/>
+      </div>
+
+      <div class="grid2" style="margin-bottom:4px">
+        <div>
+          <label class="lbl">KM Inicial *</label>
+          <div style="display:flex;gap:6px">
+            <input class="inp" type="number" id="c-kmini" placeholder="42838" style="flex:1;min-width:0" oninput="updateKmCalc()"/>
+            <label for="c-cam-odo" style="padding:0 10px;border:1px solid #1a7a42;border-radius:8px;background:#f0fdf4;color:#1a7a42;cursor:pointer;display:flex;align-items:center;min-height:42px;flex-shrink:0" title="Fotografar odômetro">
+              <span id="c-cam-icon">📷</span>
+            </label>
+            <input id="c-cam-odo" type="file" accept="image/*" onchange="handleOdometer(this)" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none"/>
+          </div>
+          <div style="font-size:11px;color:#9ca3af;margin-top:4px">📷 Foto ou galeria</div>
+        </div>
+        <div>
+          <label class="lbl">KM Final <span style="font-weight:400;opacity:.7">(opcional)</span></label>
+          <input class="inp" type="number" id="c-kmfin" placeholder="42895" oninput="updateKmCalc()"/>
+        </div>
+      </div>
+      <div id="c-km-info" style="font-size:12px;color:#9ca3af;margin-bottom:8px">ℹ️ Se não informado, será usado o KM inicial do próximo dia.</div>
+      <div id="c-km-calc" style="display:none;text-align:center;font-size:13px;color:#1a7a42;margin-bottom:12px;font-weight:500"></div>
+
+      <!-- Relato -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span style="font-size:13px;font-weight:600;color:#6b7280">🎤 Relato da visita</span>
+          <button id="c-rec-btn" onclick="toggleRec()" style="font-size:12px;padding:5px 11px;border:1px solid #1a7a42;border-radius:6px;background:#f0fdf4;color:#1a7a42;cursor:pointer;display:flex;align-items:center;gap:5px">
+            🎙️ <span id="c-rec-label">Gravar</span>
+            <span id="c-rec-dot" class="blink" style="display:none;width:6px;height:6px;border-radius:50%;background:#dc2626;display:none"></span>
+          </button>
+        </div>
+        <div style="position:relative">
+          <textarea class="inp" id="c-relato" rows="3" placeholder="Digite ou use o 🎤 do teclado para ditar as visitas do dia. Pode incluir vários clientes e atividades no mesmo relato!" oninput="updateRelatoBtn()"></textarea>
+          <button onclick="document.getElementById('c-relato').value='';updateRelatoBtn()" style="position:absolute;top:8px;right:8px;background:none;border:none;color:#9ca3af;font-size:18px;cursor:pointer">×</button>
+        </div>
+        <div style="font-size:11px;color:#9ca3af;margin-top:5px">💡 Descreva todos os clientes e atividades do dia em um único relato</div>
+        <button id="c-extract-btn" onclick="processRelato()" disabled style="width:100%;margin-top:10px;padding:9px;border-radius:8px;border:1px solid #1a7a42;background:#f0fdf4;color:#1a7a42;font-weight:500;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;gap:6px">
+          ✨ Extrair clientes e atividades com IA
+        </button>
+      </div>
+
+      <!-- Preview de múltiplos registros extraídos -->
+      <div id="c-preview-entries" style="display:none">
+        <div class="sec-lbl">Registros extraídos — revise antes de salvar</div>
+        <div id="c-preview-list"></div>
+        <button class="btn-green" onclick="saveAllEntries()" style="margin-bottom:8px">
+          ✅ Salvar todos os registros
+        </button>
+        <button onclick="clearPreview()" style="width:100%;padding:9px;background:none;border:1px solid #d1d5db;border-radius:8px;color:#6b7280;cursor:pointer;font-size:13px">Cancelar</button>
+      </div>
+
+      <!-- Formulário manual -->
+      <div id="c-manual-form">
+        <div style="margin-bottom:12px">
+          <label class="lbl">Cliente *</label>
+          <input class="inp" type="text" id="c-client" placeholder="Nome do cliente"/>
+        </div>
+        <div style="margin-bottom:16px">
+          <label class="lbl">Atividade *</label>
+          <textarea class="inp" id="c-activity" rows="3" placeholder="Descreva a atividade..."></textarea>
+        </div>
+        <button class="btn-green" onclick="saveSingleEntry()">
+          <span id="c-save-icon">➕</span>
+          <span id="c-save-label">Adicionar registro</span>
+        </button>
+      </div>
+
+      <div id="c-today-entries" style="margin-top:16px"></div>
+    </div>
+
+    <!-- SEMANA -->
+    <div class="page" id="cpage-week">
+      <div style="margin-bottom:12px">
+        <label class="lbl">Selecione uma data da semana</label>
+        <input class="inp" type="date" id="c-week-date" onchange="renderWeek()"/>
+      </div>
+      <div id="c-week-info" style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:9px 12px;font-size:13px;color:#15803d;display:flex;justify-content:space-between;margin-bottom:12px"></div>
+      <div id="c-week-content"></div>
+      <div id="c-week-total" class="total-bar" style="display:none"></div>
+    </div>
+
+    <!-- EXPORTAR CAMPO -->
+    <div class="page" id="cpage-export">
+      <div class="card">
+        <div style="font-weight:600;font-size:16px;margin-bottom:4px">Exportar planilha semanal</div>
+        <p style="color:#6b7280;font-size:13px;margin-bottom:14px;line-height:1.6">Selecione qualquer data da semana e gere o Excel no modelo padrão.</p>
+        <label class="lbl">Semana de referência</label>
+        <input class="inp" type="date" id="c-exp-date" onchange="updateCampoExportInfo()" style="margin-bottom:12px"/>
+        <div id="c-exp-info" style="background:#f9fafb;border-radius:8px;padding:12px;font-size:13px;color:#374151;line-height:1.9;margin-bottom:14px"></div>
+        <button class="btn-green" id="c-exp-btn" onclick="exportCampo()">
+          💾 Baixar planilha Excel (.xlsx)
+        </button>
+      </div>
+    </div>
+  </div><!-- fim mod-campo -->
+
+  <!-- ==================== MÓDULO RDV ==================== -->
+  <div class="module" id="mod-rdv">
+    <div class="sub-nav">
+      <button class="sub-tab active" id="rtab-nf" onclick="switchRdvTab('nf')">📋 Lançar NF</button>
+      <button class="sub-tab" id="rtab-list" onclick="switchRdvTab('list')">📄 Lançamentos</button>
+      <button class="sub-tab" id="rtab-export" onclick="switchRdvTab('export')">💾 Exportar</button>
+    </div>
+
+    <!-- LANÇAR NF -->
+    <div class="page active" id="rpage-nf">
+      <div class="sec-lbl">1. Selecione a categoria</div>
+      <div class="cat-grid">
+        <button class="cat-btn" id="cat-refeicoes" onclick="selectCat('refeicoes')">🍽️<span>Refeições</span></button>
+        <button class="cat-btn" id="cat-hospedagem" onclick="selectCat('hospedagem')">🏨<span>Hospedagem</span></button>
+        <button class="cat-btn" id="cat-pedagio" onclick="selectCat('pedagio')">🚧<span>Pedágio/Táxi/Estac.</span></button>
+        <button class="cat-btn" id="cat-outros" onclick="selectCat('outros')">📦<span>Outros</span></button>
+        <button class="cat-btn" id="cat-manutencao" onclick="selectCat('manutencao')">🔧<span>Manutenção</span></button>
+        <button class="cat-btn" id="cat-combustivel" onclick="selectCat('combustivel')">⛽<span>Combustível</span></button>
+      </div>
+
+      <div class="sec-lbl">2. Fotografe ou informe os dados</div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span style="font-size:13px;font-weight:600;color:#6b7280">📷 Nota Fiscal</span>
+          <label for="r-nf-photo" style="padding:6px 14px;border:1px solid #1a7a42;border-radius:8px;background:#f0fdf4;color:#1a7a42;cursor:pointer;font-size:13px;font-weight:500">
+            <span id="r-cam-text">📷 Fotografar NF</span>
+          </label>
+          <input id="r-nf-photo" type="file" accept="image/*" onchange="handleNFPhoto(this)" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none"/>
+        </div>
+        <div id="r-preview-box" style="display:none;margin-bottom:12px;text-align:center">
+          <img id="r-nf-preview" style="max-width:100%;max-height:180px;border-radius:8px;border:1px solid #e5e7eb"/>
+        </div>
+        <div id="r-ocr-status" style="display:none;text-align:center;padding:8px;color:#6b7280;font-size:13px"></div>
+      </div>
+
+      <div style="margin-bottom:12px">
+        <label class="lbl">Data da NF</label>
+        <input class="inp" type="date" id="r-nf-date"/>
+      </div>
+      <div style="margin-bottom:12px">
+        <label class="lbl">Estabelecimento / Descrição</label>
+        <input class="inp" type="text" id="r-nf-desc" placeholder="Nome do estabelecimento"/>
+      </div>
+      <div class="grid2" style="margin-bottom:12px">
+        <div>
+          <label class="lbl">Valor (R$) *</label>
+          <input class="inp" type="number" step="0.01" id="r-nf-valor" placeholder="0,00"/>
+        </div>
+        <div id="r-litros-field" style="display:none">
+          <label class="lbl">Litros</label>
+          <input class="inp" type="number" step="0.01" id="r-nf-litros" placeholder="0,00"/>
+        </div>
+      </div>
+      <div id="r-comb-extra" style="display:none;margin-bottom:12px">
+        <label class="lbl">KM na NF</label>
+        <input class="inp" type="number" id="r-nf-km" placeholder="Ex: 47330"/>
+      </div>
+
+      <button class="btn-green" onclick="saveNF()">➕ Adicionar lançamento</button>
+    </div>
+
+    <!-- LANÇAMENTOS -->
+    <div class="page" id="rpage-list">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-size:15px;font-weight:600">Lançamentos</div>
+        <select class="inp" id="r-filter-month" onchange="renderNFList()" style="width:auto;padding:6px 10px;font-size:13px"></select>
+      </div>
+      <div id="r-list-content"></div>
+      <div id="r-list-summary"></div>
+    </div>
+
+    <!-- EXPORTAR RDV -->
+    <div class="page" id="rpage-export">
+      <div class="card">
+        <div style="font-weight:600;font-size:16px;margin-bottom:12px">Exportar RDV Mensal</div>
+        <div class="grid2" style="margin-bottom:12px">
+          <div><label class="lbl">Período inicial</label><input class="inp" type="date" id="r-exp-inicio" oninput="updateRdvExportPreview()"/></div>
+          <div><label class="lbl">Período final</label><input class="inp" type="date" id="r-exp-fim" oninput="updateRdvExportPreview()"/></div>
+        </div>
+        <div id="r-km-info-box" style="display:none;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px;font-size:13px;color:#15803d;margin-bottom:12px"></div>
+        <div class="sec-lbl">KM do veículo no período</div>
+        <div class="grid2" style="margin-bottom:12px">
+          <div><label class="lbl">KM Início</label><input class="inp" type="number" id="r-exp-kmini" placeholder="—" oninput="updateRdvExportPreview()"/></div>
+          <div><label class="lbl">KM Final</label><input class="inp" type="number" id="r-exp-kmfim" placeholder="—" oninput="updateRdvExportPreview()"/></div>
+        </div>
+        <div class="sec-lbl">Dados para depósito</div>
+        <div style="margin-bottom:10px"><label class="lbl">Instituição</label><input class="inp" type="text" id="r-exp-banco" placeholder="Banco do Brasil"/></div>
+        <div style="margin-bottom:10px"><label class="lbl">Agência / Conta</label><input class="inp" type="text" id="r-exp-conta"/></div>
+        <div style="margin-bottom:16px"><label class="lbl">Chave Pix</label><input class="inp" type="text" id="r-exp-pix"/></div>
+        <div id="r-exp-preview" style="background:#f9fafb;border-radius:8px;padding:12px;font-size:13px;line-height:1.9;margin-bottom:14px;color:#374151"></div>
+        <button class="btn-green" id="r-exp-btn" onclick="exportRDV()">💾 Baixar Excel RDV (.xlsx)</button>
+      </div>
+    </div>
+  </div><!-- fim mod-rdv -->
+
+</div><!-- fim app -->
+
+<div id="toast" class="toast"></div>
+
+<script>
+var API_KEY = '';
+var CAMPO_KEY = 'campo-v1';
+var RDV_KEY   = 'rdv-v4';
+var CNPJ_OK   = '23752302000111';
+var COLABORADOR = 'Tiago Canale';
+var DIAS = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+var CATS = {
+  refeicoes:  {label:'Refeições',           emoji:'🍽️'},
+  hospedagem: {label:'Hospedagem',          emoji:'🏨'},
+  pedagio:    {label:'Pedágio/Táxi/Estac.', emoji:'🚧'},
+  outros:     {label:'Outros',              emoji:'📦'},
+  manutencao: {label:'Manutenção Veículo',  emoji:'🔧'},
+  combustivel:{label:'Combustível',         emoji:'⛽'}
+};
+
+var campoEntries = [];
+var nfs = [];
+var cEditId = null;
+var selCat = null;
+var isRec = false;
+var recTimer = null;
+var recSecs = 0;
+var mediaRec = null;
+var recChunks = [];
+var pendingEntries = []; // múltiplos registros extraídos do relato
+
+// ---- UTILS ----
+function isoDate(d){ return d.toISOString().split('T')[0]; }
+function fmtDate(s){ if(!s)return''; var p=s.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
+function fmtMoney(v){ return 'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function showToast(msg,type){
+  type=type||'ok';
+  var t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast '+type; t.style.display='block';
+  clearTimeout(t._t); t._t=setTimeout(function(){ t.style.display='none'; },4000);
+}
+function load(key){ try{ return JSON.parse(localStorage.getItem(key)||'[]'); }catch(e){ return []; } }
+function save(key,data){ try{ localStorage.setItem(key,JSON.stringify(data)); }catch(e){} }
+function semana(ds){
+  var d=new Date(ds+'T12:00:00'), dow=d.getDay();
+  var mon=new Date(d); mon.setDate(d.getDate()-(dow===0?6:dow-1));
+  var sat=new Date(mon); sat.setDate(mon.getDate()+5);
+  return {mon:mon,sat:sat};
+}
+function dayEntries(ds){ return campoEntries.filter(function(e){ return e.date===ds; }).sort(function(a,b){ return a.kmIni-b.kmIni; }); }
+function resolveKmFin(e){
+  if(e.kmFin!==null&&e.kmFin!==undefined) return e.kmFin;
+  var next=new Date(e.date+'T12:00:00'); next.setDate(next.getDate()+1);
+  var de=dayEntries(isoDate(next));
+  return de.length>0?de[0].kmIni:null;
+}
+function kmPerc(e){ var f=resolveKmFin(e); return f!==null?f-e.kmIni:null; }
+
+// ---- NAVEGAÇÃO ----
+function switchModule(mod){
+  document.getElementById('mtab-campo').className='main-tab'+(mod==='campo'?' active':'');
+  document.getElementById('mtab-rdv').className='main-tab'+(mod==='rdv'?' active':'');
+  document.getElementById('mod-campo').className='module'+(mod==='campo'?' active':'');
+  document.getElementById('mod-rdv').className='module'+(mod==='rdv'?' active':'');
+  if(mod==='rdv'){ populateMonthFilter(); renderNFList(); updateRdvExportPreview(); }
+}
+function switchCampoTab(tab){
+  ['daily','week','export'].forEach(function(t){
+    document.getElementById('ctab-'+t).className='sub-tab'+(t===tab?' active':'');
+    document.getElementById('cpage-'+t).className='page'+(t===tab?' active':'');
+  });
+  if(tab==='week') renderWeek();
+  if(tab==='export') updateCampoExportInfo();
+}
+function switchRdvTab(tab){
+  ['nf','list','export'].forEach(function(t){
+    document.getElementById('rtab-'+t).className='sub-tab'+(t===tab?' active':'');
+    document.getElementById('rpage-'+t).className='page'+(t===tab?' active':'');
+  });
+  if(tab==='list'){ populateMonthFilter(); renderNFList(); }
+  if(tab==='export') updateRdvExportPreview();
+}
+
+// ==================== CAMPO ====================
+
+function updateKmCalc(){
+  var ini=+document.getElementById('c-kmini').value;
+  var fin=+document.getElementById('c-kmfin').value;
+  var hasFin=document.getElementById('c-kmfin').value.trim()!=='';
+  document.getElementById('c-km-info').style.display=hasFin?'none':'block';
+  var calc=document.getElementById('c-km-calc');
+  if(ini&&fin&&fin>ini){ calc.style.display='block'; calc.textContent='↔ '+(fin-ini).toLocaleString('pt-BR')+' km nesta visita'; }
+  else calc.style.display='none';
+}
+
+function updateRelatoBtn(){
+  var btn=document.getElementById('c-extract-btn');
+  btn.disabled=!document.getElementById('c-relato').value.trim();
+}
+
+// Odômetro — sem capture para permitir galeria
+function handleOdometer(input){
+  var file=input.files&&input.files[0]; if(!file)return;
+  document.getElementById('c-cam-icon').innerHTML='<span class="spin">⟳</span>';
+  var img=new Image();
+  img.onload=function(){
+    try{
+      var mw=1400,w=img.width,h=img.height;
+      if(w>mw){h=Math.round(h*mw/w);w=mw;}
+      var c=document.createElement('canvas');c.width=w;c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      var b64=c.toDataURL('image/jpeg',0.82).split(',')[1];
+      callAPI([{role:'user',content:[
+        {type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},
+        {type:'text',text:'Foto do odômetro de um carro. Qual o número exato de km? Responda SOMENTE com o número inteiro sem pontos ou vírgulas. Exemplo: 42895'}
+      ]}],100,function(res){
+        var num=res.replace(/\D/g,'').trim();
+        if(num&&!isNaN(num)){
+          document.getElementById('c-kmini').value=num;
+          showToast('KM lido: '+Number(num).toLocaleString('pt-BR')+' ✓');
+          updateKmCalc();
+        } else { showToast('Não consegui ler. Digite manualmente.','err'); }
+        document.getElementById('c-cam-icon').textContent='📷';
+      },function(err){
+        showToast('Erro: '+err,'err');
+        document.getElementById('c-cam-icon').textContent='📷';
+      });
+    }catch(e){ showToast('Erro ao processar imagem.','err'); document.getElementById('c-cam-icon').textContent='📷'; }
+  };
+  img.onerror=function(){ showToast('Erro ao carregar imagem.','err'); document.getElementById('c-cam-icon').textContent='📷'; };
+  img.src=URL.createObjectURL(file);
+  input.value='';
+}
+
+// Gravação de voz
+function toggleRec(){
+  if(isRec){ if(mediaRec) mediaRec.stop(); return; }
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ showToast('Microfone indisponível. Use o teclado.','err'); return; }
+  navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+    var mime=['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg'].filter(function(t){ return MediaRecorder.isTypeSupported(t); })[0]||'';
+    mediaRec=new MediaRecorder(stream,mime?{mimeType:mime}:{});
+    recChunks=[];
+    mediaRec.ondataavailable=function(e){ if(e.data.size>0) recChunks.push(e.data); };
+    mediaRec.onstop=function(){
+      stream.getTracks().forEach(function(t){ t.stop(); });
+      clearInterval(recTimer); isRec=false;
+      document.getElementById('c-rec-label').textContent='Gravar';
+      document.getElementById('c-rec-dot').style.display='none';
+      var blob=new Blob(recChunks,{type:mediaRec.mimeType||'audio/webm'});
+      var img=new Image(); // reuse toBase64 via FileReader
+      var fr=new FileReader();
+      fr.onloadend=function(){
+        var b64=fr.result.split(',')[1];
+        callAPI([{role:'user',content:[
+          {type:'document',source:{type:'base64',media_type:(mediaRec.mimeType||'audio/webm').split(';')[0],data:b64}},
+          {type:'text',text:'Transcreva este áudio de técnico agrícola e extraia todos os clientes visitados e atividades realizadas. JSON somente: {"registros":[{"cliente":"...","atividade":"..."}]}'}
+        ]}],600,function(res){
+          try{
+            var parsed=JSON.parse(res.replace(/```json|```/g,'').trim());
+            if(parsed.registros&&parsed.registros.length){
+              showPendingEntries(parsed.registros);
+            }
+          }catch(e){ showToast('Não foi possível extrair. Digite manualmente.','err'); }
+        },function(err){ showToast('Erro no áudio: '+err,'err'); });
+      };
+      fr.readAsDataURL(blob);
+    };
+    mediaRec.start(500); isRec=true; recSecs=0;
+    document.getElementById('c-rec-label').textContent='Parar (0s)';
+    document.getElementById('c-rec-dot').style.display='inline-block';
+    recTimer=setInterval(function(){ recSecs++; document.getElementById('c-rec-label').textContent='Parar ('+recSecs+'s)'; },1000);
+  }).catch(function(e){ showToast(e.name==='NotAllowedError'?'Permissão negada.':'Microfone não encontrado.','err'); });
+}
+
+// Processar texto/relato — extrai múltiplos registros
+function processRelato(){
+  var txt=document.getElementById('c-relato').value.trim();
+  if(!txt){ showToast('Digite o relato primeiro.','err'); return; }
+  var btn=document.getElementById('c-extract-btn');
+  btn.disabled=true; btn.textContent='⏳ Processando...';
+  callAPI([{role:'user',content:'Técnico agrícola relatou: "'+txt+'"\nExtraia TODOS os clientes visitados e atividades realizadas (pode haver mais de um). JSON somente sem markdown: {"registros":[{"cliente":"...","atividade":"..."}]}'}],600,
+    function(res){
+      try{
+        var parsed=JSON.parse(res.replace(/```json|```/g,'').trim());
+        if(parsed.registros&&parsed.registros.length){ showPendingEntries(parsed.registros); }
+        else { showToast('Nenhum registro encontrado. Preencha manualmente.','warn'); }
+      }catch(e){ showToast('Erro ao processar. Preencha manualmente.','err'); }
+      btn.disabled=false; btn.innerHTML='✨ Extrair clientes e atividades com IA';
+    },
+    function(err){ showToast('Erro: '+err,'err'); btn.disabled=false; btn.innerHTML='✨ Extrair clientes e atividades com IA'; }
+  );
+}
+
+function showPendingEntries(registros){
+  pendingEntries=registros;
+  var date=document.getElementById('c-date').value;
+  var kmIni=document.getElementById('c-kmini').value;
+  var kmFin=document.getElementById('c-kmfin').value;
+  var html=registros.map(function(r,i){
+    return '<div class="entry-card" style="margin-bottom:8px">'
+      +'<div style="font-size:11px;font-weight:700;color:#1a7a42;margin-bottom:6px">VISITA '+(i+1)+'</div>'
+      +'<div style="margin-bottom:6px"><label class="lbl">Cliente</label>'
+      +'<input class="inp" type="text" id="pe-client-'+i+'" value="'+escHtml(r.cliente||'')+'"/></div>'
+      +'<div><label class="lbl">Atividade</label>'
+      +'<textarea class="inp" id="pe-activity-'+i+'" rows="2">'+escHtml(r.atividade||'')+'</textarea></div>'
+      +'</div>';
+  }).join('');
+  document.getElementById('c-preview-list').innerHTML=html;
+  document.getElementById('c-preview-entries').style.display='block';
+  document.getElementById('c-manual-form').style.display='none';
+  showToast(registros.length+' registro(s) extraído(s)!');
+}
+
+function escHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function saveAllEntries(){
+  var date=document.getElementById('c-date').value;
+  var kmIni=document.getElementById('c-kmini').value;
+  var kmFin=document.getElementById('c-kmfin').value;
+  if(!kmIni){ showToast('Informe o KM inicial','err'); return; }
+  var saved=0;
+  for(var i=0;i<pendingEntries.length;i++){
+    var client=document.getElementById('pe-client-'+i).value.trim();
+    var activity=document.getElementById('pe-activity-'+i).value.trim();
+    if(!client||!activity) continue;
+    campoEntries.push({id:Date.now()+'-'+i,date:date,kmIni:+kmIni,kmFin:kmFin?+kmFin:null,client:client,activity:activity});
+    saved++;
+  }
+  save(CAMPO_KEY,campoEntries);
+  clearPreview();
+  document.getElementById('c-kmini').value=kmFin||kmIni;
+  document.getElementById('c-kmfin').value='';
+  document.getElementById('c-relato').value='';
+  updateRelatoBtn(); updateKmCalc();
+  renderTodayEntries();
+  showToast(saved+' registro(s) salvo(s)!');
+}
+
+function clearPreview(){
+  pendingEntries=[];
+  document.getElementById('c-preview-entries').style.display='none';
+  document.getElementById('c-manual-form').style.display='block';
+  document.getElementById('c-preview-list').innerHTML='';
+}
+
+function saveSingleEntry(){
+  var date=document.getElementById('c-date').value;
+  var kmIni=document.getElementById('c-kmini').value;
+  var kmFin=document.getElementById('c-kmfin').value;
+  var client=document.getElementById('c-client').value.trim();
+  var activity=document.getElementById('c-activity').value.trim();
+  if(!kmIni){ showToast('Informe o KM inicial','err'); return; }
+  if(!client){ showToast('Informe o cliente','err'); return; }
+  if(!activity){ showToast('Informe a atividade','err'); return; }
+  var entry={id:cEditId||Date.now()+'',date:date,kmIni:+kmIni,kmFin:kmFin?+kmFin:null,client:client,activity:activity};
+  if(cEditId) campoEntries=campoEntries.map(function(e){ return e.id===cEditId?entry:e; });
+  else campoEntries.push(entry);
+  save(CAMPO_KEY,campoEntries);
+  if(!cEditId){ document.getElementById('c-kmini').value=kmFin||kmIni; }
+  document.getElementById('c-kmfin').value='';
+  document.getElementById('c-client').value='';
+  document.getElementById('c-activity').value='';
+  cCancelEdit();
+  renderTodayEntries(); updateKmCalc();
+  showToast(cEditId?'Atualizado!':'Registro salvo!');
+}
+
+function cCancelEdit(){
+  cEditId=null;
+  document.getElementById('c-edit-banner').style.display='none';
+  document.getElementById('c-save-label').textContent='Adicionar registro';
+  document.getElementById('c-save-icon').textContent='➕';
+}
+
+function cEditEntry(id){
+  var e=campoEntries.find(function(x){ return x.id===id; }); if(!e)return;
+  cEditId=id;
+  document.getElementById('c-date').value=e.date;
+  document.getElementById('c-kmini').value=e.kmIni;
+  document.getElementById('c-kmfin').value=e.kmFin||'';
+  document.getElementById('c-client').value=e.client;
+  document.getElementById('c-activity').value=e.activity;
+  document.getElementById('c-edit-banner').style.display='flex';
+  document.getElementById('c-save-label').textContent='Salvar alterações';
+  document.getElementById('c-save-icon').textContent='✅';
+  switchCampoTab('daily'); window.scrollTo(0,0);
+}
+
+function cDeleteEntry(id){
+  if(!confirm('Remover?'))return;
+  campoEntries=campoEntries.filter(function(e){ return e.id!==id; });
+  save(CAMPO_KEY,campoEntries); renderTodayEntries(); showToast('Removido');
+}
+
+function renderTodayEntries(){
+  var date=document.getElementById('c-date').value;
+  var de=dayEntries(date);
+  var el=document.getElementById('c-today-entries');
+  if(!de.length){ el.innerHTML=''; return; }
+  el.innerHTML='<div style="font-size:13px;font-weight:600;color:#6b7280;margin-bottom:8px">Registros de '+fmtDate(date)+' ('+de.length+')</div>'
+    +de.map(function(e){
+      var fin=resolveKmFin(e),km=fin!==null?fin-e.kmIni:null,isEst=e.kmFin===null&&fin!==null;
+      return '<div class="entry-card"><div style="display:flex;justify-content:space-between;align-items:flex-start">'
+        +'<div style="flex:1"><div style="font-weight:600;font-size:14px">'+e.client+'</div>'
+        +'<div style="color:#6b7280;font-size:13px;margin-top:2px">'+e.activity+'</div>'
+        +'<div style="color:#9ca3af;font-size:12px;margin-top:5px">📍 '+e.kmIni.toLocaleString('pt-BR')+' → '+(fin?fin.toLocaleString('pt-BR'):'?')+(km!==null?' · '+km.toLocaleString('pt-BR')+' km'+(isEst?' *':''):'')+'</div></div>'
+        +'<div style="display:flex;gap:4px;margin-left:8px">'
+        +'<button onclick="cEditEntry(\''+e.id+'\')" style="background:none;border:1px solid #d1d5db;border-radius:6px;padding:5px 8px;cursor:pointer;color:#6b7280">✏️</button>'
+        +'<button onclick="cDeleteEntry(\''+e.id+'\')" style="background:none;border:1px solid #fca5a5;border-radius:6px;padding:5px 8px;cursor:pointer;color:#dc2626">🗑</button>'
+        +'</div></div></div>';
+    }).join('');
+}
+
+function renderWeek(){
+  var ref=document.getElementById('c-week-date').value; if(!ref)return;
+  var sw=semana(ref),mon=sw.mon,sat=sw.sat;
+  var days=[]; for(var d=new Date(mon);d<=sat;d.setDate(d.getDate()+1)) days.push(isoDate(new Date(d)));
+  var we=campoEntries.filter(function(e){ var d=new Date(e.date+'T12:00:00'); return d>=mon&&d<=sat; });
+  document.getElementById('c-week-info').innerHTML='<span>📅 '+fmtDate(isoDate(mon))+' a '+fmtDate(isoDate(sat))+'</span><span style="font-weight:600">'+we.length+' registro(s)</span>';
+  var totalKm=0;
+  var html=days.map(function(ds){
+    var de=dayEntries(ds),dObj=new Date(ds+'T12:00:00');
+    var km=de.reduce(function(s,e){ var k=kmPerc(e); return s+(k||0); },0);
+    totalKm+=km;
+    var rows=de.length===0?'<div style="padding:10px 14px;color:#9ca3af;font-size:13px">Sem registros</div>'
+      :de.map(function(e){
+        var fin=resolveKmFin(e),k=fin!==null?fin-e.kmIni:null,isEst=e.kmFin===null&&fin!==null;
+        return '<div style="padding:10px 14px;border-bottom:1px solid #f3f4f6">'
+          +'<div style="font-weight:600;font-size:14px">'+e.client+'</div>'
+          +'<div style="color:#6b7280;font-size:13px">'+e.activity+'</div>'
+          +'<div style="color:#9ca3af;font-size:12px;margin-top:3px">'+e.kmIni.toLocaleString('pt-BR')+' → '+(fin?fin.toLocaleString('pt-BR'):'?')+(k!==null?' · '+k.toLocaleString('pt-BR')+' km'+(isEst?' *':''):'')+'</div></div>';
+      }).join('');
+    return '<div style="background:#fff;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden;margin-bottom:10px">'
+      +'<div class="day-header"><span style="font-weight:600;font-size:14px">'+DIAS[dObj.getDay()]+' · '+fmtDate(ds)+'</span>'
+      +'<span style="color:#1a7a42;font-weight:600">'+(km>0?km.toLocaleString('pt-BR')+' km':'—')+'</span></div>'
+      +rows+'</div>';
+  }).join('');
+  document.getElementById('c-week-content').innerHTML=html;
+  var tot=document.getElementById('c-week-total');
+  tot.style.display='flex';
+  tot.innerHTML='<span style="font-weight:600">Total da semana</span><span style="font-weight:700;font-size:22px">'+totalKm.toLocaleString('pt-BR')+' km</span>';
+}
+
+function updateCampoExportInfo(){
+  var ref=document.getElementById('c-exp-date').value; if(!ref)return;
+  var sw=semana(ref),mon=sw.mon,sat=sw.sat;
+  var we=campoEntries.filter(function(e){ var d=new Date(e.date+'T12:00:00'); return d>=mon&&d<=sat; });
+  var totalKm=we.reduce(function(s,e){ var k=kmPerc(e); return s+(k||0); },0);
+  document.getElementById('c-exp-info').innerHTML='📅 <strong>'+fmtDate(isoDate(mon))+'</strong> a <strong>'+fmtDate(isoDate(sat))+'</strong><br>📋 '+we.length+' registro(s)<br>🚗 Total: <strong>'+totalKm.toLocaleString('pt-BR')+' km</strong>';
+  var btn=document.getElementById('c-exp-btn');
+  btn.disabled=we.length===0; btn.style.background=we.length>0?'#1a7a42':'#9ca3af';
+}
+
+function exportCampo(){
+  var ref=document.getElementById('c-exp-date').value;
+  var sw=semana(ref),mon=sw.mon,sat=sw.sat;
+  var days=[]; for(var d=new Date(mon);d<=sat;d.setDate(d.getDate()+1)) days.push(isoDate(new Date(d)));
+  var we=campoEntries.filter(function(e){ var dv=new Date(e.date+'T12:00:00'); return dv>=mon&&dv<=sat; });
+  if(!we.length){ showToast('Nenhum dado nesta semana','err'); return; }
+  var rows=[];
+  rows.push(['Colaborador/Prest. Serviço: '+COLABORADOR,'','','','Semana Referência','','']);
+  rows.push(['','','','','Data inicial','','Data Final']);
+  rows.push(['','','','',fmtDate(isoDate(mon)),'',fmtDate(isoDate(sat))]);
+  rows.push([]);
+  rows.push(['Data','Dia','Cliente','Atividade','Km Inicial','Km Final','Km']);
+  days.forEach(function(ds){
+    var de=dayEntries(ds); if(!de.length)return;
+    var dObj=new Date(ds+'T12:00:00');
+    de.forEach(function(e,i){
+      var fin=resolveKmFin(e),km=fin!==null?fin-e.kmIni:'';
+      rows.push([i===0?fmtDate(ds):'',i===0?DIAS[dObj.getDay()]:'',e.client,e.activity,e.kmIni,fin||'',km]);
+    });
+  });
+  rows.push([]); rows.push(['RESUMO']);
+  rows.push(['Data','Dia','','','','','Km']);
+  var total=0;
+  days.forEach(function(ds){
+    var dObj=new Date(ds+'T12:00:00');
+    var km=dayEntries(ds).reduce(function(s,e){ var k=kmPerc(e); return s+(k||0); },0);
+    total+=km;
+    rows.push([fmtDate(ds),DIAS[dObj.getDay()],'','','','',km||'']);
+  });
+  rows.push(['','','','','','Total',total]);
+  var ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[16,12,22,40,12,12,8].map(function(w){ return{wch:w}; });
+  var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Relatório Semanal');
+  XLSX.writeFile(wb,'Relatorio_'+COLABORADOR.replace(' ','_')+'_'+fmtDate(isoDate(mon)).replace(/\//g,'-')+'.xlsx');
+  showToast('Planilha gerada!');
+}
+
+// ==================== RDV ====================
+
+function selectCat(cat){
+  selCat=cat;
+  Object.keys(CATS).forEach(function(k){ document.getElementById('cat-'+k).className='cat-btn'+(k===cat?' selected':''); });
+  var isComb=cat==='combustivel';
+  document.getElementById('r-litros-field').style.display=isComb?'block':'none';
+  document.getElementById('r-comb-extra').style.display=isComb?'block':'none';
+}
+
+function handleNFPhoto(input){
+  var file=input.files&&input.files[0]; if(!file)return;
+  document.getElementById('r-nf-preview').src=URL.createObjectURL(file);
+  document.getElementById('r-preview-box').style.display='block';
+  var status=document.getElementById('r-ocr-status');
+  status.style.display='block'; status.innerHTML='<span class="spin">⟳</span> Preparando imagem...';
+  document.getElementById('r-cam-text').textContent='⏳ Processando...';
+  var img=new Image();
+  img.onload=function(){
+    try{
+      var mw=1400,w=img.width,h=img.height;
+      if(w>mw){h=Math.round(h*mw/w);w=mw;}
+      var c=document.createElement('canvas');c.width=w;c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      var b64=c.toDataURL('image/jpeg',0.82).split(',')[1];
+      var isComb=selCat==='combustivel';
+      var catLabel=selCat?CATS[selCat].label:'despesa';
+      var prompt=isComb
+        ?'Nota fiscal de combustível. JSON somente sem markdown: {"valor":0.00,"litros":0.00,"estabelecimento":"...","data":"DD/MM/AAAA","km":0,"cnpj":"..."}'
+        :'Nota fiscal de '+catLabel+'. JSON somente sem markdown: {"valor":0.00,"estabelecimento":"...","data":"DD/MM/AAAA","cnpj":"..."}';
+      status.innerHTML='<span class="spin">⟳</span> Enviando para IA...';
+      callAPI([{role:'user',content:[
+        {type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},
+        {type:'text',text:prompt}
+      ]}],400,function(res){
+        try{
+          var parsed=JSON.parse(res.replace(/```json|```/g,'').trim());
+          if(parsed.valor) document.getElementById('r-nf-valor').value=parsed.valor;
+          if(parsed.litros) document.getElementById('r-nf-litros').value=parsed.litros;
+          if(parsed.estabelecimento) document.getElementById('r-nf-desc').value=parsed.estabelecimento;
+          if(parsed.km) document.getElementById('r-nf-km').value=parsed.km;
+          if(parsed.data){
+            var p=parsed.data.split('/');
+            if(p.length===3) document.getElementById('r-nf-date').value=p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0');
+          }
+          var alertas=[];
+          var cnpjLido=(parsed.cnpj||'').replace(/\D/g,'');
+          if(!cnpjLido) alertas.push('⚠️ CNPJ destinatário não encontrado.');
+          else if(cnpjLido!==CNPJ_OK) alertas.push('⚠️ CNPJ diverge: '+parsed.cnpj);
+          if(selCat==='combustivel'&&!parsed.km) alertas.push('⚠️ KM não encontrado nas observações.');
+          if(alertas.length){
+            status.innerHTML='✅ Extraído com alertas:<br><span style="color:#dc2626;font-size:12px">'+alertas.join('<br>')+'</span>';
+            showToast(alertas[0],'warn');
+          } else {
+            status.innerHTML='✅ Dados extraídos! Confira antes de salvar.';
+            showToast('NF lida com sucesso!');
+          }
+        }catch(e){ status.innerHTML='⚠️ Erro ao interpretar resposta.'; showToast('Preencha manualmente.','err'); }
+        document.getElementById('r-cam-text').textContent='📷 Trocar foto';
+      },function(err){ status.innerHTML='⚠️ Erro: '+err; showToast(err,'err'); document.getElementById('r-cam-text').textContent='📷 Tentar novamente'; });
+    }catch(e){ status.innerHTML='⚠️ Erro ao processar imagem.'; document.getElementById('r-cam-text').textContent='📷 Tentar novamente'; }
+  };
+  img.onerror=function(){ status.innerHTML='⚠️ Erro ao carregar imagem.'; document.getElementById('r-cam-text').textContent='📷 Tentar novamente'; };
+  img.src=URL.createObjectURL(file);
+  input.value='';
+}
+
+function saveNF(){
+  if(!selCat){ showToast('Selecione a categoria','err'); return; }
+  var valor=document.getElementById('r-nf-valor').value;
+  if(!valor){ showToast('Informe o valor','err'); return; }
+  var isComb=selCat==='combustivel';
+  var nf={
+    id:Date.now()+'',
+    date:document.getElementById('r-nf-date').value,
+    cat:selCat,
+    desc:document.getElementById('r-nf-desc').value.trim(),
+    valor:+valor,
+    litros:isComb&&document.getElementById('r-nf-litros').value?+document.getElementById('r-nf-litros').value:null,
+    km:isComb&&document.getElementById('r-nf-km').value?+document.getElementById('r-nf-km').value:null
+  };
+  nfs.push(nf); save(RDV_KEY,nfs);
+  ['r-nf-valor','r-nf-litros','r-nf-km','r-nf-desc'].forEach(function(id){ document.getElementById(id).value=''; });
+  document.getElementById('r-nf-date').value=isoDate(new Date());
+  document.getElementById('r-nf-preview').src='';
+  document.getElementById('r-preview-box').style.display='none';
+  document.getElementById('r-ocr-status').style.display='none';
+  document.getElementById('r-cam-text').textContent='📷 Fotografar NF';
+  Object.keys(CATS).forEach(function(k){ document.getElementById('cat-'+k).className='cat-btn'; });
+  selCat=null;
+  document.getElementById('r-litros-field').style.display='none';
+  document.getElementById('r-comb-extra').style.display='none';
+  showToast('Lançamento salvo!');
+}
+
+function populateMonthFilter(){
+  var sel=document.getElementById('r-filter-month');
+  var months=[];
+  nfs.forEach(function(n){ var m=n.date.substring(0,7); if(months.indexOf(m)<0) months.push(m); });
+  months.sort().reverse();
+  var cur=isoDate(new Date()).substring(0,7);
+  if(months.indexOf(cur)<0) months.unshift(cur);
+  var prev=sel.value;
+  sel.innerHTML=months.map(function(m){
+    var p=m.split('-');
+    var label=new Date(+p[0],+p[1]-1,1).toLocaleString('pt-BR',{month:'long',year:'numeric'});
+    return '<option value="'+m+'">'+label+'</option>';
+  }).join('');
+  if(prev&&months.indexOf(prev)>=0) sel.value=prev;
+}
+
+function renderNFList(){
+  var month=document.getElementById('r-filter-month').value;
+  var filtered=nfs.filter(function(n){ return n.date.indexOf(month)===0; });
+  filtered.sort(function(a,b){ return a.date.localeCompare(b.date); });
+  var el=document.getElementById('r-list-content');
+  if(!filtered.length){ el.innerHTML='<div style="text-align:center;color:#9ca3af;padding:24px">Nenhum lançamento</div>'; document.getElementById('r-list-summary').innerHTML=''; return; }
+  el.innerHTML=filtered.map(function(n){
+    var cat=CATS[n.cat]||{emoji:'',label:n.cat};
+    return '<div class="entry-card"><div style="display:flex;justify-content:space-between">'
+      +'<div style="flex:1"><div class="cat-badge">'+cat.emoji+' '+cat.label+'</div>'
+      +'<div style="font-weight:600">'+fmtMoney(n.valor)+(n.litros?' · '+n.litros+' L':'')+(n.km?' · KM: '+n.km.toLocaleString('pt-BR'):'')+'</div>'
+      +(n.desc?'<div style="color:#6b7280;font-size:13px">'+n.desc+'</div>':'')
+      +'<div style="color:#9ca3af;font-size:12px">📅 '+fmtDate(n.date)+'</div></div>'
+      +'<button onclick="deleteNF(\''+n.id+'\')" style="background:none;border:1px solid #fca5a5;border-radius:6px;padding:5px 8px;cursor:pointer;color:#dc2626;margin-left:8px;align-self:flex-start">🗑</button>'
+      +'</div></div>';
+  }).join('');
+  var totals={};Object.keys(CATS).forEach(function(k){totals[k]=0;});
+  var totalLitros=0;
+  filtered.forEach(function(n){ totals[n.cat]=(totals[n.cat]||0)+n.valor; if(n.litros) totalLitros+=n.litros; });
+  var grand=Object.keys(totals).reduce(function(s,k){return s+totals[k];},0);
+  var rows=Object.keys(CATS).filter(function(k){return totals[k]>0;}).map(function(k){
+    return '<div class="summary-row"><span>'+CATS[k].emoji+' '+CATS[k].label+'</span><span>'+fmtMoney(totals[k])+'</span></div>';
+  }).join('');
+  if(totalLitros>0) rows+='<div class="summary-row"><span>⛽ Litros combustível</span><span>'+totalLitros.toFixed(2)+' L</span></div>';
+  rows+='<div class="summary-row" style="font-weight:600;border-top:1px solid #e5e7eb;margin-top:8px;padding-top:10px"><span>Total</span><span style="color:#1a7a42">'+fmtMoney(grand)+'</span></div>';
+  document.getElementById('r-list-summary').innerHTML='<div class="card" style="margin-top:4px"><div style="font-weight:600;margin-bottom:10px">Resumo</div>'+rows+'</div>';
+}
+
+function deleteNF(id){
+  if(!confirm('Remover?'))return;
+  nfs=nfs.filter(function(n){return n.id!==id;});
+  save(RDV_KEY,nfs); renderNFList(); showToast('Removido');
+}
+
+// KM do RDV integrado com módulo campo
+function getKmFromCampo(ini, fim){
+  var entries=campoEntries.filter(function(e){ return e.date>=ini&&e.date<=fim; });
+  if(!entries.length) return {kmIni:null,kmFim:null};
+  entries.sort(function(a,b){ return a.date.localeCompare(b.date)||a.kmIni-b.kmIni; });
+  var kmIni=entries[0].kmIni;
+  // KM final: último registro com kmFin, ou resolveKmFin do último
+  var last=entries[entries.length-1];
+  var kmFim=resolveKmFin(last);
+  return {kmIni:kmIni,kmFim:kmFim};
+}
+
+function updateRdvExportPreview(){
+  var ini=document.getElementById('r-exp-inicio').value;
+  var fim=document.getElementById('r-exp-fim').value;
+  if(!ini||!fim){ document.getElementById('r-exp-preview').innerHTML='<span style="color:#9ca3af">Selecione o período.</span>'; return; }
+  // Buscar KM do módulo campo
+  var kms=getKmFromCampo(ini,fim);
+  var kmBox=document.getElementById('r-km-info-box');
+  if(kms.kmIni!==null){
+    document.getElementById('r-exp-kmini').value=kms.kmIni;
+    document.getElementById('r-exp-kmfim').value=kms.kmFim||'';
+    kmBox.style.display='block';
+    kmBox.innerHTML='🚗 KM extraído dos Relatórios Semanais:<br><strong>Início: '+kms.kmIni.toLocaleString('pt-BR')+(kms.kmFim?' · Final: '+kms.kmFim.toLocaleString('pt-BR'):'')+'</strong><br><span style="font-size:11px;opacity:.8">Você pode ajustar manualmente se necessário.</span>';
+  } else {
+    kmBox.style.display='none';
+  }
+  var filtered=nfs.filter(function(n){ return n.date>=ini&&n.date<=fim; });
+  var totals={};Object.keys(CATS).forEach(function(k){totals[k]=0;});
+  var totalLitros=0;
+  filtered.forEach(function(n){ totals[n.cat]=(totals[n.cat]||0)+n.valor; if(n.litros) totalLitros+=n.litros; });
+  var grand=Object.keys(totals).reduce(function(s,k){return s+totals[k];},0);
+  var kmIni=+document.getElementById('r-exp-kmini').value||0;
+  var kmFim=+document.getElementById('r-exp-kmfim').value||0;
+  var dist=kmFim-kmIni;
+  document.getElementById('r-exp-preview').innerHTML=
+    '📅 '+fmtDate(ini)+' a '+fmtDate(fim)+'<br>'
+    +'📋 '+filtered.length+' lançamento(s)<br>'
+    +(dist>0?'🚗 '+dist.toLocaleString('pt-BR')+' km<br>':'')
+    +'💰 Total: <strong>'+fmtMoney(grand)+'</strong>';
+  var btn=document.getElementById('r-exp-btn');
+  btn.disabled=filtered.length===0; btn.style.background=filtered.length>0?'#1a7a42':'#9ca3af';
+}
+
+function exportRDV(){
+  var ini=document.getElementById('r-exp-inicio').value;
+  var fim=document.getElementById('r-exp-fim').value;
+  var kmIni=+document.getElementById('r-exp-kmini').value||0;
+  var kmFim=+document.getElementById('r-exp-kmfim').value||0;
+  var banco=document.getElementById('r-exp-banco').value;
+  var conta=document.getElementById('r-exp-conta').value;
+  var pix=document.getElementById('r-exp-pix').value;
+  if(!ini||!fim){ showToast('Informe o período','err'); return; }
+  var filtered=nfs.filter(function(n){ return n.date>=ini&&n.date<=fim; });
+  if(!filtered.length){ showToast('Nenhum lançamento','err'); return; }
+  var totals={};Object.keys(CATS).forEach(function(k){totals[k]=0;});
+  var totalLitros=0;
+  filtered.forEach(function(n){ totals[n.cat]=(totals[n.cat]||0)+n.valor; if(n.litros) totalLitros+=n.litros; });
+  var grand=Object.keys(totals).reduce(function(s,k){return s+totals[k];},0);
+  var dist=kmFim-kmIni;
+  var media=totalLitros>0?(dist/totalLitros).toFixed(2):'-';
+  var custo=dist>0?(totals.combustivel/dist).toFixed(2):'-';
+  var brl=function(v){ return v>0?v:'-'; };
+  var wb=XLSX.utils.book_new();
+  var rdv=[
+    ['EQUALIZAGRO','','RELATÓRIO DESPESAS DE VIAGEM - RDV','','','','','',''],
+    ['NOME:','','Tiago Canale','','','','','',''],
+    ['PERÍODO:','',fmtDate(ini),'A','',fmtDate(fim),'','',''],
+    ['','','','','','','','',''],
+    ['D E S P E S A S','','','D A D O S   V E Í C U L O S','','','','',''],
+    ['DESPESAS','','VALOR DESPESAS','','','','','',''],
+    ['REFEIÇÕES','R$',brl(totals.refeicoes),'MARCA/ANO VEÍCULO:','','Toyota Hilux - 2025','','',''],
+    ['HOSPEDAGEM','R$',brl(totals.hospedagem),'PLACA VEÍCULO :','','TQP7C41','','',''],
+    ['PEDÁGIO - TÁXI - ESTACIONAMENTO','R$',brl(totals.pedagio),'KM INICIO:','',kmIni||'-','','',''],
+    ['OUTRAS DESPESAS (CARTÓRIO, TAXAS, GUIAS)','R$',brl(totals.outros),'KM FINAL:','',kmFim||'-','','',''],
+    ['MANUTENÇÃO VEÍCULO','R$',brl(totals.manutencao),'DISTÂNCIA PERCORRIDA:','',dist||'-','','',''],
+    ['COMBUSTÍVEL ( VALOR EM R$)','R$',brl(totals.combustivel),'LITROS COMBUSTÍVEIS','',totalLitros>0?+totalLitros.toFixed(2):'-','','',''],
+    ['LITROS COMBUSTIVEL','',totalLitros>0?+totalLitros.toFixed(2):'-','MÉDIA KM POR LITRO','',media,'','',''],
+    ['TOTAL DESPESAS - R$','R$',grand,'CUSTO COMBUST. POR KM RODADO','R$',custo,'','',''],
+    ['','','','','','','','',''],
+    ['DATA:','','','DADOS PARA DEPÓSITO RDV COMPLEMENTAR','','','','',''],
+    ['ASSINATURA DO FAVORECIDO:','','','FAVORECIDO:','','Tiago Canale','','',''],
+    ['DATA:','','','Instituição:','',banco,'','',''],
+    ['VISTO DIREÇÃO:','','','Agência/Conta:','',conta,'','',''],
+    ['DATA:','','','Chave Pix','',pix,'','',''],
+    ['VISTO CAIXA:','','','VALOR A DEPOSITAR:','R$',grand,'','',''],
+    ['','','','','','','','',''],
+    ['* Alterar apenas as células em letra azul.','','','','','','','','']
+  ];
+  var wsRDV=XLSX.utils.aoa_to_sheet(rdv);
+  wsRDV['!cols']=[28,5,16,26,5,20,5,5,5].map(function(w){return{wch:w};});
+  wsRDV['!merges']=[
+    {s:{r:0,c:2},e:{r:0,c:8}},{s:{r:1,c:2},e:{r:1,c:8}},
+    {s:{r:2,c:2},e:{r:2,c:3}},{s:{r:2,c:5},e:{r:2,c:8}},
+    {s:{r:4,c:0},e:{r:4,c:2}},{s:{r:4,c:3},e:{r:4,c:8}},
+    {s:{r:15,c:3},e:{r:15,c:8}},
+    {s:{r:6,c:5},e:{r:6,c:8}},{s:{r:7,c:5},e:{r:7,c:8}},
+    {s:{r:8,c:5},e:{r:8,c:8}},{s:{r:9,c:5},e:{r:9,c:8}},
+    {s:{r:10,c:5},e:{r:10,c:8}},{s:{r:11,c:5},e:{r:11,c:8}},
+    {s:{r:12,c:5},e:{r:12,c:8}},{s:{r:16,c:5},e:{r:16,c:8}},
+    {s:{r:17,c:5},e:{r:17,c:8}},{s:{r:18,c:5},e:{r:18,c:8}},
+    {s:{r:19,c:5},e:{r:19,c:8}},{s:{r:20,c:5},e:{r:20,c:8}}
+  ];
+  XLSX.utils.book_append_sheet(wb,wsRDV,'RDV');
+  var soma=[['Refeições','Hospedagem','Pedágio, Táxi, Estacionamento','Outros','Manutenção Veículo','Combustível (R$)','Combustível (Litros)']];
+  var catIdx={refeicoes:0,hospedagem:1,pedagio:2,outros:3,manutencao:4,combustivel:5};
+  filtered.forEach(function(n){
+    var row=['','','','','','',''];
+    if(catIdx[n.cat]!==undefined) row[catIdx[n.cat]]=n.valor;
+    if(n.cat==='combustivel'&&n.litros) row[6]=n.litros;
+    soma.push(row);
+  });
+  soma.push([totals.refeicoes||'',totals.hospedagem||'',totals.pedagio||'',totals.outros||'',totals.manutencao||'',totals.combustivel||'',totalLitros||'']);
+  var wsSoma=XLSX.utils.aoa_to_sheet(soma);
+  wsSoma['!cols']=[16,14,28,14,20,16,18].map(function(w){return{wch:w};});
+  XLSX.utils.book_append_sheet(wb,wsSoma,'SOMA RDV');
+  var mes=new Date(ini+'T12:00:00').toLocaleString('pt-BR',{month:'long',year:'numeric'});
+  XLSX.writeFile(wb,'RDV_TiagoCanale_'+mes+'.xlsx');
+  showToast('RDV exportado!');
+}
+
+// ==================== API ====================
+function callAPI(messages, maxTokens, onSuccess, onError){
+  var key = localStorage.getItem('eq-api-key')||'';
+  if(!key){ onError('Chave API não configurada. Toque em ⚙ API.'); return; }
+  var xhr=new XMLHttpRequest();
+  xhr.open('POST','https://api.anthropic.com/v1/messages');
+  xhr.setRequestHeader('Content-Type','application/json');
+  xhr.setRequestHeader('x-api-key',key);
+  xhr.setRequestHeader('anthropic-version','2023-06-01');
+  xhr.setRequestHeader('anthropic-dangerous-direct-browser-access','true');
+  xhr.onload=function(){
+    try{
+      var data=JSON.parse(xhr.responseText);
+      if(data.error) throw new Error(data.error.message);
+      var text=data.content.map(function(c){return c.text||'';}).join('');
+      onSuccess(text);
+    }catch(e){ onError(e.message||'Erro desconhecido'); }
+  };
+  xhr.onerror=function(){ onError('Erro de rede.'); };
+  xhr.send(JSON.stringify({model:'claude-sonnet-4-5',max_tokens:maxTokens,messages:messages}));
+}
+
+// ==================== API MODAL ====================
+function openApiModal(){
+  var saved = localStorage.getItem('eq-api-key')||'';
+  document.getElementById('api-key-input').value = saved;
+  document.getElementById('api-modal').style.display='flex';
+}
+function closeApiModal(){ document.getElementById('api-modal').style.display='none'; }
+function saveApiKey(){
+  var k = document.getElementById('api-key-input').value.trim();
+  if(!k){ showToast('Digite a chave','err'); return; }
+  localStorage.setItem('eq-api-key', k);
+  closeApiModal();
+  document.getElementById('api-btn').style.background='rgba(255,255,255,.35)';
+  showToast('Chave salva!');
+}
+
+// ==================== INIT ====================
+campoEntries=load(CAMPO_KEY);
+nfs=load(RDV_KEY);
+document.getElementById('c-date').value=isoDate(new Date());
+document.getElementById('c-week-date').value=isoDate(new Date());
+document.getElementById('c-exp-date').value=isoDate(new Date());
+document.getElementById('r-nf-date').value=isoDate(new Date());
+// Mostrar aviso se chave não configurada
+if(!localStorage.getItem('eq-api-key')){
+  setTimeout(function(){ openApiModal(); }, 500);
+}
+renderTodayEntries();
+updateCampoExportInfo();
+</script>
+</body>
+</html>
